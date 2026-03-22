@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FragZone.io - 3D FPS Arena</title>
+    <meta name="description" content="FragZone.io - An intense 3D first-person shooter arena game with AI opponents">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <div class="start-container">
+            <h1 class="game-title">FRAG<span class="accent">ZONE</span><span class="io">.io</span></h1>
+            <p class="tagline">ENTER THE ARENA</p>
+            <div class="player-setup">
+                <input type="text" id="playerName" placeholder="Enter your name..." maxlength="16" value="Player">
+                <div class="bot-count-selector">
+                    <label>DIFFICULTY</label>
+                    <div class="bot-buttons">
+                        <button class="bot-btn" data-count="3">EASY</button>
+                        <button class="bot-btn active" data-count="5">MEDIUM</button>
+                        <button class="bot-btn" data-count="8">HARD</button>
+                        <button class="bot-btn" data-count="12">IMPOSSIBLE</button>
+                    </div>
+                    <div id="highScoreText" style="color: #00f0ff; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; margin-top: 5px;">High Score: 0</div>
+                </div>
+            </div>
+            <button id="playButton" class="play-btn">
+                <span class="btn-text">PLAY NOW</span>
+                <span class="btn-glow"></span>
+            </button>
+            <div class="controls-info">
+                <div class="control"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</div>
+                <div class="control"><kbd>MOUSE</kbd> Aim</div>
+                <div class="control"><kbd>CLICK</kbd> Shoot</div>
+                <div class="control"><kbd>R</kbd> Reload</div>
+                <div class="control"><kbd>SHIFT</kbd> Sprint</div>
+                <div class="control"><kbd>SPACE</kbd> Jump</div>
+            </div>
+        </div>
+
+        <button id="tutorialBtn" class="tutorial-btn" title="How to Play">?</button>
+        <div class="credits-footer">created by shadhin_f</div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorialModal" class="hidden">
+        <div class="tutorial-content">
+            <button id="closeTutorialBtn" class="close-btn">&times;</button>
+            <h2 style="color:var(--primary); font-family:'Orbitron', sans-serif; text-shadow:0 0 10px rgba(0,240,255,0.4); margin-bottom:1rem; text-align: center;">HOW TO PLAY</h2>
+            <div class="rules-list" style="text-align: left; font-size: 1.1rem; line-height: 1.6; color: var(--text);">
+                <p><span style="color:var(--accent);">🎯 Goal:</span> Eliminate AI bots and survive to get the highest score!</p>
+                <p><span style="color:var(--gold);">🔫 Weapons:</span> Glowing orange drops give you weapons (Sniper, Shotgun, Auto Rifle). They vanish if not collected quickly!</p>
+                <p><span style="color:#00aaff;">📦 Ammo:</span> Blue drops resupply your reserve ammunition.</p>
+                <p><span style="color:#00ffff;">🛡️ Shield:</span> Cyan Dodecahedron grants 5 seconds of invincibility.</p>
+                <p><span style="color:#ff0000;">⚔️ Damage:</span> Red Diamond doubles your weapon damage for 5 seconds.</p>
+                <p><span style="color:#00e676;">✚ Health:</span> Green boxes heal 20 HP.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <!-- Crosshair -->
+        <div id="crosshair">
+            <div class="ch-line ch-top"></div>
+            <div class="ch-line ch-right"></div>
+            <div class="ch-line ch-bottom"></div>
+            <div class="ch-line ch-left"></div>
+            <div class="ch-dot"></div>
+        </div>
+
+        <!-- Hit Marker -->
+        <div id="hitMarker" class="hidden">
+            <div class="hm-line hm-1"></div>
+            <div class="hm-line hm-2"></div>
+            <div class="hm-line hm-3"></div>
+            <div class="hm-line hm-4"></div>
+        </div>
+
+        <!-- Damage Indicator -->
+        <div id="damageOverlay"></div>
+
+        <!-- Health Bar -->
+        <div id="healthBar">
+            <div class="health-icon">+</div>
+            <div class="health-track">
+                <div class="health-fill" id="healthFill"></div>
+            </div>
+            <span class="health-text" id="healthText">100</span>
+        </div>
+
+        <!-- Ammo Counter -->
+        <div id="ammoCounter">
+            <div class="ammo-icon">⬡</div>
+            <span class="ammo-current" id="ammoCurrent">30</span>
+            <span class="ammo-divider">/</span>
+            <span class="ammo-reserve" id="ammoReserve">90</span>
+        </div>
+
+        <!-- Score -->
+        <div id="scoreDisplay">
+            <div class="score-label">SCORE</div>
+            <div class="score-value" id="scoreValue">0</div>
+        </div>
+
+        <!-- Kill Feed -->
+        <div id="killFeed"></div>
+
+        <!-- Minimap -->
+        <canvas id="minimap" width="180" height="180"></canvas>
+
+        <!-- Leaderboard -->
+        <div id="leaderboard">
+            <div class="lb-title">LEADERBOARD</div>
+            <div id="lbEntries"></div>
+        </div>
+
+        <!-- Weapon Display -->
+        <div id="weaponDisplay">
+            <div class="weapon-name" id="weaponName">PISTOL</div>
+        </div>
+
+        <!-- UI Announcements -->
+        <div id="uiAnnouncement" style="position: absolute; top: 220px; left: 50%; transform: translateX(-50%); font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: #ffc400; text-shadow: 0 0 15px rgba(255,196,0,0.6); opacity: 0; transition: opacity 0.3s; font-weight: 900; background: rgba(0,0,0,0.5); padding: 8px 30px; border-radius: 8px; pointer-events: none; text-align: center;"></div>
+
+    </div> <!-- Close HUD -->
+
+    <!-- Respawn Screen -->
+    <div id="respawnScreen" class="hidden">
+            <div class="respawn-content" style="text-align: center;">
+                <h2>ELIMINATED</h2>
+                <p class="killed-by">by <span id="killedBy">Bot</span></p>
+                <div style="margin: 20px 0; font-size: 1.5rem; font-family: 'Orbitron', sans-serif;">
+                    SCORE: <span id="finalScoreVal" style="color:#00f0ff; text-shadow: 0 0 10px rgba(0,240,255,0.5);">0</span>
+                </div>
+                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px;">
+                    <button id="playAgainBtn" class="play-btn" style="width: auto; padding: 15px 30px; font-size: 1.1rem; margin-bottom: 0;">
+                        <span class="btn-text">RESTART</span><span class="btn-glow"></span>
+                    </button>
+                    <button id="mainMenuBtn" class="play-btn" style="width: auto; padding: 15px 30px; font-size: 1.1rem; margin-bottom: 0; background: rgba(0, 240, 255, 0.1); border: 2px solid #00f0ff; color: #00f0ff; box-shadow: none;">
+                        <span class="btn-text" style="color: #00f0ff;">MAIN MENU</span><span class="btn-glow" style="background: rgba(0, 240, 255, 0.2); filter: blur(20px);"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    <!-- Game Canvas Container -->
+    <div id="gameContainer"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
