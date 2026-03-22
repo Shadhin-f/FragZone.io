@@ -279,6 +279,10 @@ function init() {
     // Initial HUD update
     updateHUD();
 
+    // Load local player name
+    const savedName = localStorage.getItem('ioShooter_playerName');
+    if (savedName) document.getElementById('playerName').value = savedName;
+
     // High Score UI Update
     const updateHighScoreDisplay = () => {
         const activeBtn = document.querySelector('.bot-btn.active');
@@ -647,6 +651,7 @@ function startGame() {
     
     const nameInput = document.getElementById('playerName').value;
     player.name = nameInput.trim() || 'Player';
+    localStorage.setItem('ioShooter_playerName', player.name);
     
     // Get bot count
     let botCount = 5;
