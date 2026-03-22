@@ -1059,11 +1059,18 @@ class Bot {
 
     respawn() {
         this.health = 100;
-        this.mesh.position.set(
-            (Math.random() - 0.5) * (mapSize - 20),
-            0.9,
-            (Math.random() - 0.5) * (mapSize - 20)
-        );
+        let validPos = false;
+        let attempts = 0;
+        // Collision-safe respawn
+        while (!validPos && attempts < 100) {
+            this.mesh.position.set(
+                (Math.random() - 0.5) * (mapSize - 20),
+                0.9,
+                (Math.random() - 0.5) * (mapSize - 20)
+            );
+            if (!checkCollision(this.mesh.position, 0.6)) validPos = true;
+            attempts++;
+        }
         this.getNewWanderTarget();
     }
 
@@ -1166,21 +1173,35 @@ class Bot {
 
             // Shooting logic
             if (Date.now() - this.lastShot > 800) {
-                // Add some inaccuracy
-                const accuracy = 0.8;
-                playSound('shoot', distToPlayer);
-                if (Math.random() < accuracy) {
-                    takeDamage(10, this.name);
-                    
-                    // Draw tracer from bot to player
-                    const p1 = this.mesh.position.clone();
-                    p1.y += 0.5; // From gun height
-                    const p2 = yawObject.position.clone();
-                    const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-                    const mat = new THREE.LineBasicMaterial({ color: 0xff2d55 });
-                    const tracer = new THREE.Line(geo, mat);
-                    scene.add(tracer);
-                    setTimeout(() => { scene.remove(tracer); geo.dispose(); mat.dispose(); }, 50);
+                // Ensure strict LOS before firing (prevents shooting through corners)
+                const raycaster = new THREE.Raycaster(this.mesh.position, direction);
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                let canActuallyShoot = false;
+                for(let hit of intersects) {
+                    if(hit.object === this.mesh || hit.object.parent === this.mesh || (hit.object.parent && hit.object.parent.parent === this.mesh)) continue;
+                    if(hit.object === yawObject || hit.distance > dist - 1) {
+                        canActuallyShoot = true;
+                    }
+                    break;
+                }
+
+                if (canActuallyShoot) {
+                    // Add some inaccuracy
+                    const accuracy = 0.8;
+                    playSound('shoot', distToPlayer);
+                    if (Math.random() < accuracy) {
+                        takeDamage(10, this.name);
+                        
+                        // Draw tracer from bot to player
+                        const p1 = this.mesh.position.clone();
+                        p1.y += 0.5; // From gun height
+                        const p2 = yawObject.position.clone();
+                        const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+                        const mat = new THREE.LineBasicMaterial({ color: 0xff2d55 });
+                        const tracer = new THREE.Line(geo, mat);
+                        scene.add(tracer);
+                        setTimeout(() => { scene.remove(tracer); geo.dispose(); mat.dispose(); }, 50);
+                    }
                 }
                 this.lastShot = Date.now() + Math.random() * 500;
             }
@@ -1405,28 +1426,8 @@ function addKillFeed(killer, victim) {
 }
 
 function updateLeaderboard() {
-    // Sort players by score
-    const sorted = [...players].sort((a, b) => b.score - a.score).slice(0, 5);
-    
-    const container = document.getElementById('lbEntries');
-    container.innerHTML = '';
-    
-    sorted.forEach((p, idx) => {
-        const el = document.createElement('div');
-        el.className = 'lb-entry';
-        
-        let rankClass = '';
-        if (idx === 0) rankClass = 'gold';
-        else if (idx === 1) rankClass = 'silver';
-        else if (idx === 2) rankClass = 'bronze';
-        
-        el.innerHTML = `
-            <div class="lb-rank ${rankClass}">#${idx+1}</div>
-            <div class="lb-name ${p.isPlayer ? 'is-player' : ''}">${p.name}</div>
-            <div class="lb-score">${p.score}</div>
-        `;
-        container.appendChild(el);
-    });
+    const el = document.getElementById('currentPlayerName');
+    if (el) el.textContent = player.name.toUpperCase();
 }
 
 function drawMinimap() {
